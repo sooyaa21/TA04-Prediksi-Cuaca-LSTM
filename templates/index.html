@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherAI | LSTM Prediction</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <div class="brand">Weather<span>AI.</span></div>
+
+    <div class="side-label">MAIN MENU</div>
+
+    <a href="/" class="menu active">▦ Dashboard</a>
+    <a href="#prediction" class="menu">◉ Prediksi Suhu</a>
+    <a href="#history" class="menu">▤ Data Historis</a>
+    <a href="#comparison" class="menu">▥ Perbandingan Model</a>
+    <a href="#evaluation" class="menu">📊 Evaluasi Model</a>
+
+    <div class="sidebar-bottom">
+        <div class="model-status">
+            <div class="status-dot"></div>
+            <div>
+                <strong>Model LSTM</strong>
+                <small>Model siap digunakan</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<main class="main-content">
+
+    <header class="topbar">
+        <div>
+            <div class="breadcrumb">Workspace / Dashboard</div>
+            <h1>Weather Dashboard</h1>
+        </div>
+
+        <div class="top-right">
+            <div class="date-badge">✦ AI Weather System</div>
+            <div class="avatar">WA</div>
+        </div>
+    </header>
+
+    <section class="welcome-banner">
+        <div class="welcome-text">
+            <span class="eyebrow">ARTIFICIAL INTELLIGENCE PLATFORM</span>
+            <h2>Selamat Datang di WeatherAI</h2>
+            <p>
+                Analisis pola suhu historis dan lakukan prediksi suhu
+                menggunakan teknologi Long Short-Term Memory (LSTM).
+            </p>
+            <a href="#prediction" class="banner-button">Mulai Prediksi <span>→</span></a>
+        </div>
+
+        <div class="weather-art">
+            <div class="sun">☀</div>
+            <div class="cloud">☁</div>
+            <div class="art-caption">WEATHER<br>INTELLIGENCE</div>
+        </div>
+    </section>
+
+    <!-- OVERVIEW -->
+
+    <section class="section-heading">
+        <div>
+            <h2>Overview</h2>
+            <p>Ringkasan sistem prediksi cuaca</p>
+        </div>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue">🌡</div>
+            <div class="stat-label">Total Data Suhu</div>
+            <div class="stat-value">{{ total_data }}</div>
+            <div class="stat-note">Data historis tersedia</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon purple">🧠</div>
+            <div class="stat-label">Model Digunakan</div>
+            <div class="stat-value">LSTM</div>
+            <div class="stat-note">Deep Learning</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon orange">📊</div>
+            <div class="stat-label">Data Input</div>
+            <div class="stat-value">30 Hari</div>
+            <div class="stat-note">Windowing sequence</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon green">✓</div>
+            <div class="stat-label">Status Sistem</div>
+            <div class="stat-value">Ready</div>
+            <div class="stat-note">Model berhasil dimuat</div>
+        </div>
+    </section>
+
+    <!-- GRAFIK HISTORIS DAN PREDIKSI -->
+
+    <section class="content-grid">
+
+        <div class="panel chart-panel" id="history">
+            <div class="panel-header">
+                <div>
+                    <h3>Grafik Suhu Historis</h3>
+                    <p>Perubahan suhu selama 30 hari terakhir</p>
+                </div>
+                <span class="chart-tag">HISTORICAL DATA</span>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+        </div>
+
+        <div class="panel prediction-panel" id="prediction">
+            <div class="panel-header">
+                <div>
+                    <h3>Prediksi Suhu</h3>
+                    <p>Prediksi menggunakan model LSTM</p>
+                </div>
+                <div class="prediction-icon">✦</div>
+            </div>
+
+            <div class="prediction-description">
+                Model akan menggunakan 30 data suhu terakhir untuk
+                memperkirakan suhu pada periode berikutnya.
+            </div>
+
+            <div class="result-box">
+                <span>HASIL PREDIKSI SUHU</span>
+
+                {% if prediction is not none %}
+                    <div class="result-number">
+                        {{ prediction }}<small>°</small>
+                    </div>
+                    <p class="result-success">✓ Prediksi berhasil dilakukan</p>
+                {% else %}
+                    <div class="result-placeholder">--<small>°</small></div>
+                    <p class="result-muted">Belum ada hasil prediksi</p>
+                {% endif %}
+            </div>
+
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form action="/predict" method="POST">
+                <button type="submit" class="predict-button">
+                    ✦ Jalankan Prediksi Sekarang
+                </button>
+            </form>
+
+            <div class="prediction-footnote">
+                * Prediksi berdasarkan 30 data suhu terakhir.
+            </div>
+        </div>
+
+    </section>
+
+    <!-- GRAFIK AKTUAL VS PREDIKSI -->
+
+    <section class="panel comparison-panel" id="comparison">
+        <div class="panel-header">
+            <div>
+                <h3>Grafik Aktual vs Prediksi LSTM</h3>
+                <p>Perbandingan suhu aktual dan hasil prediksi pada data pengujian</p>
+            </div>
+            <span class="chart-tag">MODEL EVALUATION</span>
+        </div>
+
+        {% if actual and predicted %}
+            <div class="chart-container comparison-chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        {% else %}
+            <div class="prediction-description">
+                Data perbandingan belum tersedia.
+            </div>
+        {% endif %}
+
+        <div class="prediction-footnote">
+            Grafik ini menggunakan data pengujian model untuk melihat
+            kedekatan hasil prediksi dengan nilai suhu aktual.
+        </div>
+    </section>
+
+    <!-- EVALUASI MODEL -->
+
+    <section id="evaluation">
+        <div class="section-heading">
+            <div>
+                <h2>Evaluasi Model LSTM</h2>
+                <p>Hasil pengukuran performa model pada data pengujian</p>
+            </div>
+            <span class="chart-tag">MODEL PERFORMANCE</span>
+        </div>
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <div class="stat-icon blue">📉</div>
+                <div class="stat-label">Root Mean Squared Error</div>
+                <div class="stat-value">{{ "%.4f"|format(rmse) }}</div>
+                <div class="stat-note">RMSE - Semakin kecil semakin baik</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">🎯</div>
+                <div class="stat-label">Mean Absolute Error</div>
+                <div class="stat-value">{{ "%.4f"|format(mae) }}</div>
+                <div class="stat-note">MAE - Rata-rata kesalahan prediksi</div>
+            </div>
+
+        </section>
+    </section>
+
+    <!-- INFORMASI DATASET -->
+
+    <section class="panel data-panel">
+        <div class="panel-header">
+            <div>
+                <h3>Informasi Dataset</h3>
+                <p>Karakteristik data yang digunakan dalam penelitian</p>
+            </div>
+            <span class="chart-tag">DATA OVERVIEW</span>
+        </div>
+
+        <div class="dataset-grid">
+            <div class="dataset-item">
+                <span>Variabel Prediksi</span>
+                <strong>Temperature</strong>
+            </div>
+            <div class="dataset-item">
+                <span>Lokasi Data</span>
+                <strong>20.5, 88.12</strong>
+            </div>
+            <div class="dataset-item">
+                <span>Metode Normalisasi</span>
+                <strong>MinMaxScaler</strong>
+            </div>
+            <div class="dataset-item">
+                <span>Arsitektur Model</span>
+                <strong>LSTM + Dense</strong>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <strong>WeatherAI.</strong> LSTM Weather Prediction System
+        <span>© 2026</span>
+    </footer>
+
+</main>
+
+<script>
+    // GRAFIK SUHU HISTORIS
+
+    const dates = {{ dates | tojson }};
+    const temperatures = {{ temperatures | tojson }};
+
+    const ctx = document.getElementById('temperatureChart');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Suhu Historis',
+                data: temperatures,
+                borderColor: '#3187e8',
+                backgroundColor: 'rgba(49, 135, 232, 0.12)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Nilai Suhu'
+                    },
+                    grid: {
+                        color: '#edf1f7'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxTicksLimit: 8
+                    }
+                }
+            }
+        }
+    });
+
+
+    // GRAFIK AKTUAL VS PREDIKSI
+
+    const comparisonDates = {{ comparison_dates | tojson }};
+    const actualValues = {{ actual | tojson }};
+    const predictedValues = {{ predicted | tojson }};
+
+    const comparisonCanvas = document.getElementById('comparisonChart');
+
+    if (comparisonCanvas) {
+        new Chart(comparisonCanvas, {
+            type: 'line',
+            data: {
+                labels: comparisonDates,
+                datasets: [
+                    {
+                        label: 'Suhu Aktual',
+                        data: actualValues,
+                        borderColor: '#3187e8',
+                        backgroundColor: 'rgba(49, 135, 232, 0.08)',
+                        borderWidth: 2.5,
+                        pointRadius: 2,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Hasil Prediksi LSTM',
+                        data: predictedValues,
+                        borderColor: '#16b98a',
+                        backgroundColor: 'rgba(22, 185, 138, 0.08)',
+                        borderWidth: 2.5,
+                        pointRadius: 2,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Nilai Suhu'
+                        },
+                        grid: {
+                            color: '#edf1f7'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
